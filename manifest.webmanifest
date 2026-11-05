@@ -1,0 +1,11 @@
+{
+  "name": "Optical Transfer",
+  "short_name": "OpticalTransfer",
+  "description": "Send files between devices with a screen and a camera.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b1020",
+  "theme_color": "#0b1020",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

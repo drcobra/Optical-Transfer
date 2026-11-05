@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content="Send files and text between devices with a screen and a camera. No network, no accounts, no telemetry." />
+    <meta name="theme-color" content="#0b1020" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <title>Optical Transfer</title>
+  </head>
+  <body>
+    <header class="top">
+      <h1><img src="icon.svg" alt="" width="28" height="28" />Optical Transfer</h1>
+      <nav aria-label="Mode">
+        <a href="#send" id="tab-send">Send</a>
+        <a href="#receive" id="tab-receive">Receive</a>
+      </nav>
+    </header>
+
+    <main>
+      <ol class="steps" aria-label="How it works">
+        <li><b>1</b><span>Pick a file or text on the sending device</span></li>
+        <li><b>2</b><span>Open <em>Receive</em> on the other device</span></li>
+        <li><b>3</b><span>Point its camera at the animated code</span></li>
+      </ol>
+      <section id="view-send" hidden>
+        <div id="send-form">
+          <p class="lead">Show a file or text as a stream of animated QR codes. Point another device's camera at it.</p>
+          <label class="field">
+            <span>File</span>
+            <input type="file" id="send-file" />
+          </label>
+          <label class="field">
+            <span>…or text</span>
+            <textarea id="send-text" rows="5" placeholder="Paste text to send"></textarea>
+          </label>
+          <details>
+            <summary>Settings</summary>
+            <div class="grid">
+              <label class="field">
+                <span>Bytes per code</span>
+                <select id="send-size">
+                  <option value="400">400 (most reliable)</option>
+                  <option value="700" selected>700</option>
+                  <option value="1000">1000</option>
+                  <option value="1500">1500 (needs a sharp camera)</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Codes per second</span>
+                <select id="send-fps">
+                  <option value="4">4</option>
+                  <option value="6">6</option>
+                  <option value="8" selected>8</option>
+                  <option value="10">10</option>
+                  <option value="15">15</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Error correction</span>
+                <select id="send-ecc">
+                  <option value="L" selected>Low (denser, faster)</option>
+                  <option value="M">Medium (sturdier)</option>
+                </select>
+              </label>
+            </div>
+          </details>
+          <button id="send-start" class="primary" type="button">Start sending</button>
+          <p id="send-error" class="error" role="alert" hidden></p>
+        </div>
+
+        <div id="send-stage" hidden>
+          <div class="qr-box" id="qr-box"><canvas id="qr-canvas" aria-label="Animated QR code"></canvas></div>
+          <p id="send-stats" class="stats" aria-live="off"></p>
+          <div class="row">
+            <button id="send-full" type="button">Fullscreen</button>
+            <button id="send-stop" type="button">Stop</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-receive" hidden>
+        <div id="recv-idle">
+          <p class="lead">Point this device's camera at the sender's screen. Keep both steady until the bar fills.</p>
+          <button id="recv-start" class="primary" type="button">Start camera</button>
+          <p id="recv-error" class="error" role="alert" hidden></p>
+        </div>
+
+        <div id="recv-live" hidden>
+          <video id="recv-video" playsinline muted></video>
+          <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="recv-bar"><div id="recv-fill"></div></div>
+          <p id="recv-stats" class="stats" aria-live="polite"></p>
+          <div class="row"><button id="recv-stop" type="button">Cancel</button></div>
+        </div>
+
+        <div id="recv-done" hidden>
+          <h2 id="done-title"></h2>
+          <p id="done-meta" class="stats"></p>
+          <textarea id="done-text" rows="8" readonly hidden></textarea>
+          <div class="row">
+            <button id="done-copy" type="button" hidden>Copy text</button>
+            <button id="done-save" class="primary" type="button">Save</button>
+            <button id="done-again" type="button">Receive another</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      Everything runs in this page. Nothing is uploaded; there is no analytics. Transfers are
+      <strong>not encrypted</strong>: anyone who can see the screen can read the data.
+    </footer>
+    <script src="js/vendor/qrcode.js"></script>
+    <script src="js/vendor/jsQR.js"></script>
+    <script src="js/protocol.js"></script>
+    <script src="js/fountain.js"></script>
+    <script src="js/container.js"></script>
+    <script src="js/receiver.js"></script>
+    <script src="js/qr.js"></script>
+    <script src="js/dom.js"></script>
+    <script src="js/send.js"></script>
+    <script src="js/receive.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>

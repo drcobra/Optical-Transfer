@@ -1,0 +1,10 @@
+{
+  "name": "optical-transfer",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Offline file and text transfer over animated QR codes: screen to camera, no network, no telemetry.",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  }
+}
