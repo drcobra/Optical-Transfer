@@ -9,14 +9,15 @@
   const SWITCH_AFTER = 5;
 
   class StreamReceiver {
-    constructor() {
+    constructor(maxBytes) {
+      this.maxBytes = maxBytes;
       this.decoder = undefined;
       this.candidate = undefined;
       this.lastError = undefined;
     }
 
     push(bytes) {
-      const frame = decodeFrame(bytes);
+      const frame = decodeFrame(bytes, this.maxBytes);
       if (!isFrame(frame)) {
         this.lastError = frame;
         return this.state();

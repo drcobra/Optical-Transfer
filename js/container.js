@@ -11,7 +11,8 @@
   const OT = (globalThis.OT = globalThis.OT || {});
   const { MAX_TRANSFER_BYTES } = OT.protocol;
 
-  const MAX_FILE_BYTES = MAX_TRANSFER_BYTES - 1024;
+  const HEADROOM = 1024;
+  const MAX_FILE_BYTES = MAX_TRANSFER_BYTES - HEADROOM;
   const VERSION = 1;
   const FLAG_GZIP = 1;
   const FLAG_TEXT = 2;
@@ -55,16 +56,17 @@
   }
 
   /** payload: { name, mime, isText, data: Uint8Array } */
-  async function packContainer(payload) {
-    if (payload.data.length > MAX_FILE_BYTES) {
-      throw new ContainerError(`Too large: the limit is ${Math.floor(MAX_FILE_BYTES / 1048576)} MB.`);
+  async function packContainer(payload, maxBytes = MAX_TRANSFER_BYTES) {
+    const maxFile = maxBytes - HEADROOM;
+    if (payload.data.length > maxFile) {
+      throw new ContainerError(`Too large: the limit is ${Math.floor(maxFile / 1048576)} MB.`);
     }
     const name = encoder.encode(payload.name.slice(0, 255));
     const mime = encoder.encode(payload.mime.slice(0, 127));
     let body = payload.data;
     let flags = payload.isText ? FLAG_TEXT : 0;
     if (gzipSupported && body.length > 0) {
-      const zipped = await pipe(body, new CompressionStream("gzip"), MAX_TRANSFER_BYTES * 2);
+      const zipped = await pipe(body, new CompressionStream("gzip"), maxBytes * 2);
       if (zipped.length < body.length) {
         body = zipped;
         flags |= FLAG_GZIP;
@@ -80,11 +82,11 @@
     out.set(name, FIXED_LEN);
     out.set(mime, FIXED_LEN + name.length);
     out.set(body, FIXED_LEN + name.length + mime.length);
-    if (out.length > MAX_TRANSFER_BYTES) throw new ContainerError("Too large to transfer.");
+    if (out.length > maxBytes) throw new ContainerError("Too large to transfer.");
     return out;
   }
 
-  async function unpackContainer(bytes) {
+  async function unpackContainer(bytes, maxBytes = MAX_TRANSFER_BYTES) {
     if (bytes.length < FIXED_LEN) throw new ContainerError("Transfer is truncated.");
     if (bytes[0] !== VERSION) throw new ContainerError("Unsupported container version; update this app.");
     const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -105,7 +107,7 @@
     if (flags & FLAG_GZIP) {
       if (!gzipSupported) throw new ContainerError("This browser cannot decompress the transfer.");
       try {
-        data = await pipe(data, new DecompressionStream("gzip"), MAX_FILE_BYTES);
+        data = await pipe(data, new DecompressionStream("gzip"), maxBytes - HEADROOM);
       } catch (error) {
         if (error instanceof ContainerError) throw error;
         throw new ContainerError("Decompression failed.");
@@ -125,5 +127,5 @@
     return base && base !== "." && base !== ".." ? base : "received.bin";
   }
 
-  OT.container = { MAX_FILE_BYTES, ContainerError, packContainer, unpackContainer, safeFileName };
+  OT.container = { HEADROOM, MAX_FILE_BYTES, ContainerError, packContainer, unpackContainer, safeFileName };
 })();

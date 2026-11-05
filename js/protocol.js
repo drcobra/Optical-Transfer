@@ -20,7 +20,9 @@
   const FORMAT_VERSION = 1;
   const HEADER_LEN = 24;
   const MAX_BLOCKS = 0xffff;
+  /** Default cap on one transfer; sender and receiver can each raise it up to MAX_TRANSFER_CEILING. */
   const MAX_TRANSFER_BYTES = 16 * 1024 * 1024;
+  const MAX_TRANSFER_CEILING = 64 * 1024 * 1024;
 
   const CRC_TABLE = (() => {
     const table = new Uint32Array(256);
@@ -71,7 +73,7 @@
 
   /** Returns a frame object, or an error string:
    *  "too-short" | "not-ours" | "version" | "corrupt" | "invalid". */
-  function decodeFrame(bytes) {
+  function decodeFrame(bytes, maxBytes = MAX_TRANSFER_BYTES) {
     if (bytes.length < HEADER_LEN) return "too-short";
     if (bytes[0] !== MAGIC_0 || bytes[1] !== MAGIC_1) return "not-ours";
     if (bytes[2] !== FORMAT_VERSION) return "version";
@@ -83,7 +85,7 @@
     const payload = bytes.subarray(HEADER_LEN);
     if (crc32(bytes.subarray(0, 20), payload) !== view.getUint32(20)) return "corrupt";
     if (bytes[3] !== 0 || k < 1 || blockLen < 1 || totalLen < 1) return "invalid";
-    if (totalLen > MAX_TRANSFER_BYTES || blockCount(totalLen, blockLen) !== k) return "invalid";
+    if (totalLen > Math.min(maxBytes, MAX_TRANSFER_CEILING) || blockCount(totalLen, blockLen) !== k) return "invalid";
     return { sessionId: view.getUint32(4), seq: view.getUint32(8), k, blockLen, totalLen, payload };
   }
 
@@ -91,6 +93,7 @@
     HEADER_LEN,
     MAX_BLOCKS,
     MAX_TRANSFER_BYTES,
+    MAX_TRANSFER_CEILING,
     crc32,
     blockCount,
     minimumBlockLen,

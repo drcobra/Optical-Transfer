@@ -10,6 +10,7 @@
     version: "Seeing a code from a newer version of this app. Reload both devices.",
     "not-ours": "Seeing a QR code that is not an Optical Transfer stream.",
     corrupt: "A code was read incorrectly. Hold steady.",
+    invalid: "Seeing a transfer larger than the size limit set above, or a damaged code.",
   };
 
   OT.initReceive = function initReceive() {
@@ -26,6 +27,8 @@
     let stream;
     let scanning = false;
     let objectUrl;
+
+    const maxBytes = () => Number($("recv-max").value) * 1048576;
 
     function stopCamera() {
       scanning = false;
@@ -78,7 +81,7 @@
     }
 
     function scan() {
-      const receiver = new StreamReceiver();
+      const receiver = new StreamReceiver(maxBytes());
       const scratch = document.createElement("canvas");
       const ctx = scratch.getContext("2d", { willReadFrequently: true });
       scanning = true;
@@ -135,7 +138,7 @@
     async function finish(bytes) {
       let payload;
       try {
-        payload = await unpackContainer(bytes);
+        payload = await unpackContainer(bytes, maxBytes());
       } catch (e) {
         reset();
         showError(error, e instanceof ContainerError ? e.message : "The received data could not be read.");

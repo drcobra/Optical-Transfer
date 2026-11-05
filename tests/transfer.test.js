@@ -193,3 +193,28 @@ test("receiver ignores a brief foreign stream but switches to a persistent one",
   for (let s = 0; s < 5; s++) r.push(encodeFrame(ib, s, eb.payload(s)));
   assert.equal(r.state().sessionId, 2);
 });
+
+test("size limit is configurable and enforced on both ends", async () => {
+  const MB = 1048576;
+  const blockLen = 1000;
+  const totalLen = 20 * MB;
+  const frame = encodeFrame(
+    { sessionId: 1, k: blockCount(totalLen, blockLen), blockLen, totalLen },
+    0,
+    new Uint8Array(blockLen),
+  );
+  assert.equal(decodeFrame(frame), "invalid", "default 16 MB limit rejects 20 MB");
+  assert.ok(isFrame(decodeFrame(frame, 32 * MB)));
+  const huge = encodeFrame(
+    { sessionId: 1, k: blockCount(100 * MB, 2000), blockLen: 2000, totalLen: 100 * MB },
+    0,
+    new Uint8Array(2000),
+  );
+  assert.equal(decodeFrame(huge, 1024 * MB), "invalid", "hard ceiling holds");
+  assert.equal(new StreamReceiver(16 * MB).push(frame).lastError, "invalid");
+  assert.equal(new StreamReceiver(32 * MB).push(frame).lastError, undefined);
+
+  const data = new Uint8Array(2 * MB);
+  await assert.rejects(packContainer({ name: "a", mime: "", isText: false, data }, 1 * MB), ContainerError);
+  assert.ok((await packContainer({ name: "a", mime: "", isText: false, data }, 4 * MB)).length > 0);
+});

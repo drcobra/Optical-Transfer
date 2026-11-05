@@ -70,6 +70,15 @@
                   <option value="M">Medium (sturdier)</option>
                 </select>
               </label>
+              <label class="field">
+                <span>Maximum size</span>
+                <select id="send-max">
+                  <option value="4">4 MB</option>
+                  <option value="16" selected>16 MB</option>
+                  <option value="32">32 MB</option>
+                  <option value="64">64 MB (very slow)</option>
+                </select>
+              </label>
             </div>
           </details>
           <button id="send-start" class="primary" type="button">Start sending</button>
@@ -89,6 +98,15 @@
       <section id="view-receive" hidden>
         <div id="recv-idle">
           <p class="lead">Point this device's camera at the sender's screen. Keep both steady until the bar fills.</p>
+          <label class="field">
+            <span>Maximum size to accept</span>
+            <select id="recv-max">
+              <option value="4">4 MB</option>
+              <option value="16" selected>16 MB</option>
+              <option value="32">32 MB</option>
+              <option value="64">64 MB</option>
+            </select>
+          </label>
           <button id="recv-start" class="primary" type="button">Start camera</button>
           <p id="recv-error" class="error" role="alert" hidden></p>
         </div>

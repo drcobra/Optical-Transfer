@@ -1,7 +1,7 @@
 (function () {
   const OT = (globalThis.OT = globalThis.OT || {});
   const { $, WakeLock, formatBytes, showError } = OT.dom;
-  const { ContainerError, MAX_FILE_BYTES, packContainer } = OT.container;
+  const { ContainerError, HEADROOM, packContainer } = OT.container;
   const { FountainEncoder } = OT.fountain;
   const { HEADER_LEN, blockCount, encodeFrame, minimumBlockLen } = OT.protocol;
   const { createQr, drawQr } = OT.qr;
@@ -38,12 +38,14 @@
       const frameBytes = Number($("send-size").value);
       const fps = Number($("send-fps").value);
       const ecc = $("send-ecc").value;
+      const maxBytes = Number($("send-max").value) * 1048576;
+      const maxFile = maxBytes - HEADROOM;
 
       if (!file && !text) return showError(error, "Choose a file or enter some text first.");
-      if (file && file.size > MAX_FILE_BYTES) {
+      if (file && file.size > maxFile) {
         return showError(
           error,
-          `That file is ${formatBytes(file.size)}; the limit is ${Math.floor(MAX_FILE_BYTES / 1048576)} MB.`,
+          `That file is ${formatBytes(file.size)}; the limit is ${Math.floor(maxFile / 1048576)} MB.`,
         );
       }
 
@@ -52,7 +54,7 @@
         const payload = file
           ? { name: file.name, mime: file.type, isText: false, data: new Uint8Array(await file.arrayBuffer()) }
           : { name: "text.txt", mime: "text/plain", isText: true, data: new TextEncoder().encode(text) };
-        const container = await packContainer(payload);
+        const container = await packContainer(payload, maxBytes);
 
         const blockLen = Math.max(frameBytes - HEADER_LEN, minimumBlockLen(container.length));
         if (blockLen + HEADER_LEN > QR_CAPACITY[ecc]) throw new ContainerError("This transfer is too large to encode.");
