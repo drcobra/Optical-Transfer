@@ -3,12 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="color-scheme" content="light dark" />
+    <meta name="color-scheme" content="dark" />
     <meta name="description" content="Send files and text between devices with a screen and a camera. No network, no accounts, no telemetry." />
-    <meta name="theme-color" content="#0b1020" />
+    <meta name="theme-color" content="#1a1a1a" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; media-src 'self' blob:; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'"
     />
     <link rel="stylesheet" href="css/style.css" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
@@ -17,7 +17,6 @@
   </head>
   <body>
     <header class="top">
-      <h1><img src="icon.svg" alt="" width="28" height="28" />Optical Transfer</h1>
       <nav aria-label="Mode">
         <a href="#send" id="tab-send">Send</a>
         <a href="#receive" id="tab-receive">Receive</a>
@@ -98,6 +97,10 @@
       <section id="view-receive" hidden>
         <div id="recv-idle">
           <p class="lead">Point this device's camera at the sender's screen. Keep both steady until the bar fills.</p>
+          <label class="field" id="recv-camera-field" hidden>
+            <span>Camera</span>
+            <select id="recv-camera"></select>
+          </label>
           <label class="field">
             <span>Maximum size to accept</span>
             <select id="recv-max">

@@ -8,7 +8,7 @@
 
   const LAST_ERROR_HINT = {
     version: "Seeing a code from a newer version of this app. Reload both devices.",
-    "not-ours": "Seeing a QR code that is not an Optical Transfer stream.",
+    "not-ours": "Seeing a QR code that does not belong to this app.",
     corrupt: "A code was read incorrectly. Hold steady.",
     invalid: "Seeing a transfer larger than the size limit set above, or a damaged code.",
   };
@@ -23,6 +23,8 @@
     const fill = $("recv-fill");
     const bar = $("recv-bar");
     const wake = new WakeLock();
+    const cameraField = $("recv-camera-field");
+    const cameraSelect = $("recv-camera");
 
     let stream;
     let scanning = false;
@@ -38,8 +40,62 @@
       wake.release();
     }
 
+    // Lists cameras only when there is a real choice; labels and ids need camera permission first.
+    async function refreshCameras() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+      let cameras;
+      try {
+        cameras = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput" && d.deviceId);
+      } catch {
+        return;
+      }
+      const track = stream && stream.getVideoTracks()[0];
+      const current = (track && track.getSettings().deviceId) || cameraSelect.value;
+      const auto = document.createElement("option");
+      auto.value = "";
+      auto.textContent = "Automatic (rear camera)";
+      cameraSelect.replaceChildren(
+        auto,
+        ...cameras.map((d, i) => {
+          const option = document.createElement("option");
+          option.value = d.deviceId;
+          option.textContent = d.label || "Camera " + (i + 1);
+          return option;
+        }),
+      );
+      if (cameras.some((d) => d.deviceId === current)) cameraSelect.value = current;
+      cameraField.hidden = cameras.length < 2;
+    }
+
+    async function openStream(deviceId) {
+      const size = { width: { ideal: 1920 }, height: { ideal: 1080 } };
+      const video = deviceId ? { deviceId: { exact: deviceId }, ...size } : { facingMode: "environment", ...size };
+      try {
+        return await navigator.mediaDevices.getUserMedia({ video, audio: false });
+      } catch (e) {
+        if (!deviceId || !e || e.name !== "OverconstrainedError") throw e;
+        return openStream(undefined);
+      }
+    }
+
+    async function switchCamera() {
+      if (!scanning) return;
+      // Some phones cannot open two cameras at once, so release the current one first.
+      stream.getTracks().forEach((t) => t.stop());
+      try {
+        stream = await openStream(cameraSelect.value);
+      } catch {
+        reset();
+        return showError(error, "Could not switch to that camera.");
+      }
+      video.srcObject = stream;
+      await video.play().catch(() => {});
+      refreshCameras();
+    }
+
     function reset() {
       stopCamera();
+      idle.querySelector(".lead").after(cameraField);
       if (objectUrl) URL.revokeObjectURL(objectUrl);
       objectUrl = undefined;
       live.hidden = true;
@@ -53,10 +109,7 @@
         return showError(error, "Camera access needs a secure (HTTPS) page and a supported browser.");
       }
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } },
-          audio: false,
-        });
+        stream = await openStream(cameraSelect.value);
       } catch (e) {
         const name = e && e.name;
         return showError(
@@ -73,6 +126,8 @@
       await video.play().catch(() => {});
       idle.hidden = true;
       live.hidden = false;
+      live.prepend(cameraField);
+      refreshCameras();
       wake.acquire();
       stats.textContent = "Looking for a code…";
       fill.style.width = "0";
@@ -170,6 +225,11 @@
       copy.textContent = "Copy text";
     }
 
+    cameraSelect.addEventListener("change", switchCamera);
+    if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+      navigator.mediaDevices.addEventListener("devicechange", refreshCameras);
+    }
+    refreshCameras();
     $("recv-start").addEventListener("click", start);
     $("recv-stop").addEventListener("click", reset);
     $("done-again").addEventListener("click", reset);

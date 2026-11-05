@@ -1,6 +1,6 @@
 // Offline support: cache same-origin GET responses as they are fetched and
 // serve them cache-first, refreshing in the background. No external origins.
-const CACHE = "optical-transfer-v1";
+const CACHE = "optical-transfer-v2";
 
 self.addEventListener("install", () => self.skipWaiting());
 
